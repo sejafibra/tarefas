@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Tarefas - Seja Fibra</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/sejafibra/agenda/refs/heads/main/faviconsf.ico" type="image/x-icon">
+    
+    <!-- Import Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #0066b3;
+            --secondary-color: #f8f9fa;
+            --accent-color: #ff6b00;
+            --text-color: #333;
+            --light-text: #6c757d;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7f9;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo img {
+            width: 200px;
+            height: auto;
+        }
+        
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056a3;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: var(--text-color);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-email {
+            font-weight: 500;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .task-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-title {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .tasks-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .tasks-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .task-list {
+            list-style: none;
+        }
+        
+        .task-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .task-item.highlight {
+            border-left: 4px solid var(--accent-color);
+            background-color: rgba(255, 107, 0, 0.05);
+        }
+        
+        .task-item.completed {
+            opacity: 0.7;
+            background-color: var(--secondary-color);
+        }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .task-datetime {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .empty-tasks {
+            text-align: center;
+            padding: 20px;
+            color: var(--light-text);
+            font-style: italic;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-title {
+            margin-bottom: 20px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .login-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .error-message {
+            color: var(--danger-color);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <img src="https://sejafibra.net/wp-content/uploads/2023/06/logonovofibra.png" alt="Seja Fibra">
+            </div>
+            <div class="auth-section">
+                <div class="user-info hidden" id="userInfo">
+                    <span class="user-email" id="userEmail"></span>
+                    <button class="btn btn-outline" id="logoutBtn">Sair</button>
+                </div>
+                <div id="loginSection">
+                    <button class="btn btn-primary" id="loginBtn">Entrar</button>
+                </div>
+            </div>
+        </header>
+        
+        <div id="loginModal" class="modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Login</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <div id="loginErrorMessage" class="error-message hidden"></div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="cancelLogin">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Entrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <main class="hidden" id="appContent">
+            <div class="main-content">
+                <div class="task-form">
+                    <h2 class="form-title" id="formTitle">Nova Tarefa</h2>
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="form-group">
+                            <label for="title">Título</label>
+                            <input type="text" id="title" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Descrição</label>
+                            <textarea id="description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="date">Data</label>
+                            <input type="date" id="date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="time">Horário</label>
+                            <input type="time" id="time" class="form-control" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="saveTask">Salvar</button>
+                            <button type="button" class="btn btn-outline hidden" id="cancelEdit">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="tasks-container">
+                    <div class="tasks-section">
+                        <h2 class="section-title">Próximas Tarefas</h2>
+                        <ul class="task-list" id="upcomingTasks"></ul>
+                    </div>
+                    
+                    <div class="tasks-section">
+                        <h2 class="section-title">Tarefas Concluídas (últimos 15 dias)</h2>
+                        <ul class="task-list" id="completedTasks"></ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBm4zFVuWenMyzbz34Bn4Q-tTlz5mn-6_s",
+            authDomain: "tarefas-d8498.firebaseapp.com",
+            projectId: "tarefas-d8498",
+            storageBucket: "tarefas-d8498.firebasestorage.app",
+            messagingSenderId: "473567813403",
+            appId: "1:473567813403:web:6d7ab9886d39418098fdbe",
+            databaseURL: "https://tarefas-d8498-default-rtdb.firebaseio.com/"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // DOM Elements
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginModal = document.getElementById('loginModal');
+        const cancelLogin = document.getElementById('cancelLogin');
+        const loginForm = document.getElementById('loginForm');
+        const loginErrorMessage = document.getElementById('loginErrorMessage');
+        const userInfo = document.getElementById('userInfo');
+        const userEmail = document.getElementById('userEmail');
+        const loginSection = document.getElementById('loginSection');
+        const appContent = document.getElementById('appContent');
+        const taskForm = document.getElementById('taskForm');
+        const formTitle = document.getElementById('formTitle');
+        const cancelEdit = document.getElementById('cancelEdit');
+        const upcomingTasksList = document.getElementById('upcomingTasks');
+        const completedTasksList = document.getElementById('completedTasks');
+        
+        // Allowed emails
+        const allowedEmails = [
+            'ana@sejafibra.net', 
+            'alissia@sejafibra.net', 
+            'eduarda@sejafibra.net', 
+            'isabela@sejafibra.net', 
+            'juliana@sejafibra.net', 
+            'tais@sejafibra.net', 
+            'junior@sejafibra.net', 
+            'eduardo@sejafibra.net', 
+            'claudir@sejafibra.net', 
+            'bioranss@gmail.com'
+        ];
+        
+        // State variables
+        let currentUser = null;
+        let editingTaskId = null;
+        
+        // Event Listeners
+        loginBtn.addEventListener('click', showLoginModal);
+        cancelLogin.addEventListener('click', hideLoginModal);
+        loginForm.addEventListener('submit', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        taskForm.addEventListener('submit', saveTask);
+        cancelEdit.addEventListener('click', resetForm);
+        
+        // Firebase Auth State Observer
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                if (allowedEmails.includes(user.email)) {
+                    currentUser = user;
+                    showApp();
+                    loadTasks();
+                } else {
+                    auth.signOut();
+                    showError('Acesso não permitido para este e-mail.');
+                }
+            } else {
+                hideApp();
+            }
+        });
+        
+        // Functions
+        function showLoginModal() {
+            loginModal.style.display = 'flex';
+        }
+        
+        function hideLoginModal() {
+            loginModal.style.display = 'none';
+            loginErrorMessage.classList.add('hidden');
+            loginForm.reset();
+        }
+        
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    hideLoginModal();
+                })
+                .catch(error => {
+                    showError(error.message);
+                });
+        }
+        
+        function handleLogout() {
+            auth.signOut();
+        }
+        
+        function showError(message) {
+            loginErrorMessage.textContent = message;
+            loginErrorMessage.classList.remove('hidden');
+        }
+        
+        function showApp() {
+            userEmail.textContent = currentUser.email;
+            userInfo.classList.remove('hidden');
+            loginSection.classList.add('hidden');
+            appContent.classList.remove('hidden');
+        }
+        
+        function hideApp() {
+            userInfo.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+            appContent.classList.add('hidden');
+        }
+        
+        function saveTask(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            
+            if (!title || !date || !time) {
+                alert('Preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            const taskData = {
+                title,
+                description,
+                date,
+                time,
+                concluida: false,
+                atualizadaEm: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            if (editingTaskId) {
+                // Update existing task
+                database.ref(`tarefas/${currentUser.uid}/${editingTaskId}`).update(taskData)
+                    .then(() => {
+                        resetForm();
+                        loadTasks();
+                    });
+            } else {
+                // Create new task
+                taskData.criadaEm = firebase.database.ServerValue.TIMESTAMP;
+                database.ref(`tarefas/${currentUser.uid}`).push(taskData)
+                    .then(() => {
+                        resetForm();
+                        loadTasks();
+                    });
+            }
+        }
+        
+        function resetForm() {
+            taskForm.reset();
+            editingTaskId = null;
+            formTitle.textContent = 'Nova Tarefa';
+            cancelEdit.classList.add('hidden');
+        }
+        
+        function loadTasks() {
+            if (!currentUser) return;
+            
+            const tasksRef = database.ref(`tarefas/${currentUser.uid}`);
+            
+            tasksRef.orderByChild('date').on('value', snapshot => {
+                const tasks = snapshot.val() || {};
+                renderTasks(tasks);
+            });
+        }
+        
+        function renderTasks(tasks) {
+            // Clear task lists
+            upcomingTasksList.innerHTML = '';
+            completedTasksList.innerHTML = '';
+            
+            const today = new Date();
+            const fifteenDaysAgo = new Date();
+            fifteenDaysAgo.setDate(today.getDate() - 15);
+            
+            const thirtyDaysLater = new Date();
+            thirtyDaysLater.setDate(today.getDate() + 30);
+            
+            let nextTask = null;
+            const upcomingTasks = [];
+            const completedTasks = [];
+            
+            // Process tasks
+            Object.entries(tasks).forEach(([id, task]) => {
+                const taskDate = new Date(task.date + 'T' + (task.time || '00:00'));
+                
+                if (task.concluida) {
+                    // Add to completed tasks if within last 15 days
+                    if (taskDate >= fifteenDaysAgo) {
+                        completedTasks.push({ id, ...task });
+                    }
+                } else {
+                    // Add to upcoming tasks if within next 30 days
+                    if (taskDate <= thirtyDaysLater) {
+                        upcomingTasks.push({ id, ...task });
+                        
+                        // Check if this is the next task
+                        if (taskDate >= today && (!nextTask || taskDate < new Date(nextTask.date + 'T' + nextTask.time))) {
+                            nextTask = { id, ...task };
+                        }
+                    }
+                }
+            });
+            
+            // Sort upcoming tasks by date
+            upcomingTasks.sort((a, b) => {
+                return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
+            });
+            
+            // Sort completed tasks by date (newest first)
+            completedTasks.sort((a, b) => {
+                return new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time);
+            });
+            
+            // Render upcoming tasks
+            if (upcomingTasks.length === 0) {
+                upcomingTasksList.innerHTML = '<li class="empty-tasks">Nenhuma tarefa futura</li>';
+            } else {
+                upcomingTasks.forEach(task => {
+                    const isNextTask = nextTask && task.id === nextTask.id;
+                    renderTask(task, upcomingTasksList, isNextTask);
+                });
+            }
+            
+            // Render completed tasks
+            if (completedTasks.length === 0) {
+                completedTasksList.innerHTML = '<li class="empty-tasks">Nenhuma tarefa concluída nos últimos 15 dias</li>';
+            } else {
+                completedTasks.forEach(task => {
+                    renderTask(task, completedTasksList, false);
+                });
+            }
+        }
+        
+        function renderTask(task, listElement, isHighlighted) {
+            const taskItem = document.createElement('li');
+            taskItem.className = 'task-item';
+            if (task.concluida) taskItem.classList.add('completed');
+            if (isHighlighted) taskItem.classList.add('highlight');
+            
+            const taskDate = new Date(task.date + 'T' + (task.time || '00:00'));
+            const formattedDate = taskDate.toLocaleDateString('pt-BR');
+            const formattedTime = task.time ? taskDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+            
+            taskItem.innerHTML = `
+                <div class="task-info">
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-datetime">${formattedDate} ${formattedTime}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                </div>
+                <div class="task-actions">
+                    ${!task.concluida ? `
+                        <button class="btn btn-success complete-btn" data-id="${task.id}">Concluir</button>
+                        <button class="btn btn-warning edit-btn" data-id="${task.id}">Editar</button>
+                    ` : ''}
+                    <button class="btn btn-danger delete-btn" data-id="${task.id}">Excluir</button>
+                </div>
+            `;
+            
+            listElement.appendChild(taskItem);
+            
+            // Add event listeners to buttons
+            if (!task.concluida) {
+                taskItem.querySelector('.complete-btn').addEventListener('click', () => completeTask(task.id));
+                taskItem.querySelector('.edit-btn').addEventListener('click', () => editTask(task.id));
+            }
+            taskItem.querySelector('.delete-btn').addEventListener('click', () => deleteTask(task.id));
+        }
+        
+        function completeTask(taskId) {
+            database.ref(`tarefas/${currentUser.uid}/${taskId}`).update({
+                concluida: true,
+                atualizadaEm: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+        
+        function editTask(taskId) {
+            const taskRef = database.ref(`tarefas/${currentUser.uid}/${taskId}`);
+            
+            taskRef.once('value', snapshot => {
+                const task = snapshot.val();
+                
+                if (task) {
+                    document.getElementById('taskId').value = taskId;
+                    document.getElementById('title').value = task.title || '';
+                    document.getElementById('description').value = task.description || '';
+                    document.getElementById('date').value = task.date || '';
+                    document.getElementById('time').value = task.time || '';
+                    
+                    editingTaskId = taskId;
+                    formTitle.textContent = 'Editar Tarefa';
+                    cancelEdit.classList.remove('hidden');
+                    
+                    // Scroll to form
+                    document.querySelector('.task-form').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
+        
+        function deleteTask(taskId) {
+            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                database.ref(`tarefas/${currentUser.uid}/${taskId}`).remove();
+            }
+        }
+        
+        // Set minimum date to today for date input
+        document.getElementById('date').min = new Date().toISOString().split('T')[0];
+        
+        // Initialize app
+        resetForm();
+    </script>
+</body>
+</html>
